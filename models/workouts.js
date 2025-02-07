@@ -7,6 +7,11 @@ const workoutSchema = new mongoose.Schema({
     required: true,
     minlength: 3,
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   exercises: [
     {
       exerciseId: {
@@ -27,6 +32,7 @@ const workoutSchema = new mongoose.Schema({
       weight: {
         type: Number,
         min: 0,
+        required: false,
       },
       notes: String,
     },
@@ -44,6 +50,8 @@ function validateWorkout(workout) {
           exerciseId: Joi.string().required(),
           sets: Joi.number().min(1).required(),
           reps: Joi.number().min(1).required(),
+          weight: Joi.number().min(0).optional(),
+          notes: Joi.string().optional(),
         })
       )
       .required(),

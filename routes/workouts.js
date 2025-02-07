@@ -3,10 +3,10 @@ const router = express.Router();
 const { Workout, validateWorkout } = require("../models/workouts");
 const auth = require("../middleware/auth");
 
-// Get all workouts
-router.get("/", async (req, resp) => {
+// Get all workouts (sadece kullanıcının kendi workoutları)
+router.get("/", auth, async (req, resp) => {
   try {
-    const workouts = await Workout.find().populate({
+    const workouts = await Workout.find({ userId: req.user.userId }).populate({
       path: "exercises.exerciseId",
       select: "name description type",
     });
@@ -20,16 +20,13 @@ router.get("/", async (req, resp) => {
 // Create workout
 router.post("/", auth, async (req, resp) => {
   try {
-    // req.user ile token içindeki bilgilere erişebilirsiniz
-    console.log("User ID:", req.user.userId);
-    console.log("User Email:", req.user.email);
-
     const { error } = validateWorkout(req.body);
     if (error) return resp.status(400).send(error.details[0].message);
 
     const workout = new Workout({
       name: req.body.name,
       exercises: req.body.exercises,
+      userId: req.user.userId, // Kullanıcı ID'sini ekle
     });
 
     const result = await workout.save();
@@ -40,14 +37,16 @@ router.post("/", auth, async (req, resp) => {
   }
 });
 
-// Delete workout
-router.delete("/:id", async (req, resp) => {
+// Delete workout (sadece kendi workout'unu silebilir)
+router.delete("/:id", auth, async (req, resp) => {
   try {
-    // Sadece belirli bir ID'ye sahip workout'u sil
-    const workout = await Workout.findByIdAndDelete(req.params.id);
+    const workout = await Workout.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.userId, // Kullanıcının kendi workout'u mu kontrol et
+    });
 
     if (!workout) {
-      return resp.status(404).send("Workout not found.");
+      return resp.status(404).send("Workout not found or unauthorized.");
     }
 
     return resp.send(workout);
@@ -56,36 +55,28 @@ router.delete("/:id", async (req, resp) => {
   }
 });
 
-//update workout
-router.put("/:id", async (req, resp) => {
+// Update workout (sadece kendi workout'unu güncelleyebilir)
+router.put("/:id", auth, async (req, resp) => {
   try {
-    // Önce gelen datayı validate edelim
     const { error } = validateWorkout(req.body);
     if (error) return resp.status(400).send(error.details[0].message);
 
-    // En az bir alan kontrolü (schema'da name ve exercises required olduğu için gerekli değil aslında)
-    if (!req.body.name && !req.body.exercises) {
-      return resp
-        .status(400)
-        .send("At least one field (name or exercises) must be provided.");
-    }
-
-    const workout = await Workout.findByIdAndUpdate(
-      req.params.id,
+    const workout = await Workout.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        userId: req.user.userId, // Kullanıcının kendi workout'u mu kontrol et
+      },
       {
         $set: {
-          // $set operatörü ekleyelim
           name: req.body.name,
           exercises: req.body.exercises,
         },
       },
-      {
-        new: true,
-        runValidators: true, // Schema validasyonlarını çalıştır
-      }
+      { new: true, runValidators: true }
     );
 
-    if (!workout) return resp.status(404).send("Workout not found.");
+    if (!workout)
+      return resp.status(404).send("Workout not found or unauthorized.");
 
     return resp.send(workout);
   } catch (error) {
