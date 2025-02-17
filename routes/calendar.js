@@ -69,4 +69,42 @@ router.delete("/:date", auth, async (req, res) => {
   }
 });
 
+// Son 12 ayın workout verilerini getir
+router.get("/last-twelve-months", auth, async (req, res) => {
+  try {
+    // Şu anki tarihi al
+    const currentDate = new Date();
+
+    // 12 ay öncesinin tarihini hesapla
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+    const entries = await Calendar.find({
+      userId: req.user.userId,
+      date: {
+        $gte: twelveMonthsAgo,
+        $lte: currentDate,
+      },
+    })
+      .populate("workoutId", "name")
+      .sort({ date: 1 }); // Tarihe göre sırala
+
+    // Ayları grupla
+    const monthlyData = {};
+    entries.forEach((entry) => {
+      const monthYear = entry.date.toISOString().slice(0, 7); // "YYYY-MM" formatı
+      if (!monthlyData[monthYear]) {
+        monthlyData[monthYear] = [];
+      }
+      monthlyData[monthYear].push(entry);
+    });
+
+    res.send(monthlyData);
+  } catch (ex) {
+    res
+      .status(500)
+      .send("Error fetching last twelve months data: " + ex.message);
+  }
+});
+
 module.exports = router;
