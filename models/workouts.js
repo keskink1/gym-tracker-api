@@ -30,26 +30,17 @@ const workoutSchema = new mongoose.Schema(
           required: true,
           min: 1,
         },
-        weight: {
-          type: Number,
-          min: 0,
-          required: false,
-        },
-        sessions: [
+        setDetails: [
           {
-            exerciseTime: {
+            setNumber: {
               type: Number,
               required: true,
-              min: 0,
+              min: 1,
             },
-            restTime: {
+            weight: {
               type: Number,
-              required: true,
               min: 0,
-            },
-            completedAt: {
-              type: Date,
-              required: true,
+              required: false,
             },
           },
         ],
@@ -71,13 +62,11 @@ function validateWorkout(workout) {
           exerciseId: Joi.string().required(),
           sets: Joi.number().min(1).required(),
           reps: Joi.number().min(1).required(),
-          weight: Joi.number().min(0).optional(),
-          sessions: Joi.array()
+          setDetails: Joi.array()
             .items(
               Joi.object({
-                exerciseTime: Joi.number().min(0).required(),
-                restTime: Joi.number().min(0).required(),
-                completedAt: Joi.date().required(),
+                setNumber: Joi.number().min(1).required(),
+                weight: Joi.number().min(0).optional(),
               })
             )
             .optional(),

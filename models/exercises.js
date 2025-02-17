@@ -9,7 +9,6 @@ const exerciseSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true,
   },
   type: {
     type: String,
@@ -32,7 +31,7 @@ const Exercise = mongoose.model("Exercise", exerciseSchema);
 function validateExercise(exercise) {
   const schema = Joi.object({
     name: Joi.string().min(3).required(),
-    description: Joi.string().required(),
+    description: Joi.string().optional(),
     type: Joi.string()
       .valid(
         "chest",
