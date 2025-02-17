@@ -6,6 +6,7 @@ const users = require("./routes/users");
 const exercisesRoutes = require("./routes/exercises");
 const workouts = require("./routes/workouts");
 const cors = require("cors");
+const calendar = require("./routes/calendar");
 require("dotenv").config();
 
 mongoose
@@ -20,6 +21,7 @@ app.use("/api/auth", auth);
 app.use("/api/users", users);
 app.use("/api/exercises", exercisesRoutes);
 app.use("/api/workouts", workouts);
+app.use("/api/calendar", calendar);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
