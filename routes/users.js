@@ -1,8 +1,48 @@
 const express = require("express");
 const router = express.Router();
-const { User } = require("../models/user");
+const { User, validateUser } = require("../models/user");
 const auth = require("../middleware/auth");
 const bcrypt = require("bcryptjs");
+
+// Register new user
+router.post("/register", async (req, res) => {
+  try {
+    // Validate request body
+    const { error } = validateUser(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+
+    // Check if user already exists
+    let user = await User.findOne({ email: req.body.email });
+    if (user) return res.status(400).send("User already registered.");
+
+    // Create new user
+    user = new User({
+      email: req.body.email,
+      name: req.body.name,
+      surname: req.body.surname,
+      password: req.body.password,
+    });
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(user.password, salt);
+
+    // Save user
+    await user.save();
+
+    // Return user data (without password)
+    const userWithoutPassword = {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      surname: user.surname,
+    };
+
+    res.send(userWithoutPassword);
+  } catch (ex) {
+    res.status(500).send("Error registering user: " + ex.message);
+  }
+});
 
 // Kullanıcı profilini getir
 router.get("/me", auth, async (req, res) => {
